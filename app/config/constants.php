@@ -23,6 +23,8 @@ define("GET_COMPARING_DATA", "getComparingData");
 define("GET_API_KEY_DATA", "getElementsApiKeyData");
 define("GET_API_CALCULATION_DATA", "getElementCalculationData");
 define("SAVE_CUSTOMER_FEEDBACK", "iceFeedback");
+define("UPDATE_VIVR_LOG", "updateVivrLog");
+define("LOG_VIVR_JOURNEY", "logVivrJourney");
 
 define("PIN_SMS_TEXT", "Your Smart IVR Login PIN is : ");
 define("USER_TYPE_KEY", "bcsPaymentMode");

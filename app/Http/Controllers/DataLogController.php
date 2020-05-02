@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 class DataLogController extends DataRequestController
@@ -18,10 +19,9 @@ class DataLogController extends DataRequestController
 
     private function storeCustomerJourney($paramsArray)
     {
-        $params = json_encode($paramsArray);
-        $method = STORE_CUSTOMER_JOURNEY_FUNCTION;
-        $this->responseData = $this->dataRequest(array("method" => $method, "params" => $params));
-        $this->responseData = json_decode($this->responseData);
+        $this->params = json_encode($paramsArray);
+        $this->method = STORE_CUSTOMER_JOURNEY_FUNCTION;
+        $this->getResponse();
         if ($this->responseData == 1) {
             return true;
         }
@@ -30,10 +30,44 @@ class DataLogController extends DataRequestController
 
     private function storeVivrLog($paramsArray)
     {
-        $params = json_encode($paramsArray);
-        $method = VIVR_LOG_FUNCTION;
-        $this->responseData = $this->dataRequest(array("method" => $method, "params" => $params));
-        $this->responseData = json_decode($this->responseData);
+        $this->params = json_encode($paramsArray);
+        $this->method = VIVR_LOG_FUNCTION;
+        $this->getResponse();
+        if ($this->responseData == 1) {
+            return true;
+        }
+        return false;
+    }
+
+    public function updateVivrLog($stopTime, $timeInIvr, $sessionId)
+    {
+        $this->params = json_encode(array($stopTime, $timeInIvr, $sessionId));
+        $this->method = UPDATE_VIVR_LOG;
+        $this->getResponse();
+        if ($this->responseData == 1) {
+            return true;
+        }
+        return false;
+    }
+
+    public function logCustomerJourney($logParams)
+    {
+        $this->params = json_encode(array($logParams['logTime'], $logParams['fromPage'], $logParams['toPage'],
+            $logParams['sessionId'], $logParams['ivrId'], $logParams['dtmf'], $logParams['timeInIvr'],
+            $logParams['statusFlag'], $logParams['ip']));
+        $this->method = LOG_VIVR_JOURNEY;
+        $this->getResponse();
+        if ($this->responseData == 1) {
+            return true;
+        }
+        return false;
+    }
+
+    public function storeCustomerFeedback($stopTime, $timeInIvr, $sessionId, $feedback)
+    {
+        $this->params = json_encode(array($stopTime, $timeInIvr, $sessionId, $feedback));
+        $this->method = SAVE_CUSTOMER_FEEDBACK;
+        $this->getResponse();
         if ($this->responseData == 1) {
             return true;
         }

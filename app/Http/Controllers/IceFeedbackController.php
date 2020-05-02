@@ -15,7 +15,7 @@ class IceFeedbackController extends Controller
 
     public function __construct()
     {
-        $this->dataProvider = new DataProviderController();
+        $this->dataLogger = new DataLogController();
         $this->responseManager = new ResponseDataController();
         $this->cache = new CacheController();
         $this->response = response();
@@ -39,7 +39,7 @@ class IceFeedbackController extends Controller
         $stopTime = date("Y-m-d H:i:s");
         $timeInIvr = time() - $startTime;
 
-        if ($this->dataProvider->storeCustomerFeedback($stopTime, $timeInIvr, $sessionId, $feedback)) {
+        if ($this->dataLogger->storeCustomerFeedback($stopTime, $timeInIvr, $sessionId, $feedback)) {
             return $this->responseManager->iceFeedbackSuccessResponse($this->response);
         }
         return $this->responseManager->iceFeedbackFailedResponse($this->response);

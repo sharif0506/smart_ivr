@@ -4,23 +4,12 @@ namespace App\Http\Controllers;
 
 class DataProviderController extends DataRequestController
 {
-    private $params;
-    private $method;
-
-    private function getResponse($isArray = false)
-    {
-        $requestData = array("method" => $this->method, "params" => $this->params);
-        $this->responseData = $this->dataRequest($requestData);
-        $this->responseData = json_decode($this->responseData, $isArray);
-    }
-
     public function getUserType($cli)
     {
         $api = GET_USER_TYPE_API;
-        $params = json_encode(array($cli, $api));
-        $method = CALL_EXTERNAL_API;
-        $requestData = array("method" => $method, "params" => $params);
-        $this->responseData = json_decode($this->dataRequest($requestData), true);
+        $this->params = json_encode(array($cli, $api));
+        $this->method = CALL_EXTERNAL_API;
+        $this->getResponse(true);
         if (is_array($this->responseData) && isset($this->responseData[0][USER_TYPE_KEY])) {
             return $this->responseData[0][USER_TYPE_KEY];
         }
@@ -29,10 +18,9 @@ class DataProviderController extends DataRequestController
 
     public function generatePIN($paramArray)
     {
-        $params = json_encode($paramArray); //array($cli, $plan, $ivr_id, $auth_code, $ip)
-        $method = PIN_GENERATE_FUNCTION;
-        $this->responseData = $this->dataRequest(array("method" => $method, "params" => $params));
-        $this->responseData = json_decode($this->responseData);
+        $this->params = json_encode($paramArray); //array($cli, $plan, $ivr_id, $auth_code, $ip)
+        $this->method = PIN_GENERATE_FUNCTION;
+        $this->getResponse();
         if ($this->responseData == 1) {
             return true;
         }
@@ -42,10 +30,9 @@ class DataProviderController extends DataRequestController
     public function sendSms($cli, $text)
     {
         $did = '';
-        $params = json_encode(array($cli, $did, $text));
-        $method = SEND_SMS_FUNCTION;
-        $requestData = array("method" => $method, "params" => $params);
-        $this->responseData = json_decode($this->dataRequest($requestData));
+        $this->params = json_encode(array($cli, $did, $text));
+        $this->method = SEND_SMS_FUNCTION;
+        $this->getResponse();
         if ($this->responseData->res == "SUCCESS") {
             return true;
         }
@@ -54,10 +41,9 @@ class DataProviderController extends DataRequestController
 
     public function getUser($cli, $pin)
     {
-        $params = json_encode(array($cli, $pin));
-        $method = GET_USER_FUNCTION;
-        $this->responseData = $this->dataRequest(array("method" => $method, "params" => $params));
-        $this->responseData = json_decode($this->responseData, true);
+        $this->params = json_encode(array($cli, $pin));
+        $this->method = GET_USER_FUNCTION;
+        $this->getResponse(true);
         if ($this->responseData == 0) {
             return null;
         }
@@ -66,10 +52,9 @@ class DataProviderController extends DataRequestController
 
     public function getUserFromAuthCode($authCode)
     {
-        $params = json_encode(array($authCode));
-        $method = GET_USER_FROM_AUTH_CODE_FUNCTION;
-        $this->responseData = $this->dataRequest(array("method" => $method, "params" => $params));
-        $this->responseData = json_decode($this->responseData, true);
+        $this->params = json_encode(array($authCode));
+        $this->method = GET_USER_FROM_AUTH_CODE_FUNCTION;
+        $this->getResponse(true);
         if ($this->responseData == 0) {
             return null;
         }
@@ -78,11 +63,9 @@ class DataProviderController extends DataRequestController
 
     public function getDefaultAction($ivrId)
     {
-        $params = json_encode(array($ivrId));
-        $method = GET_DEFAULT_ACTION_FUNCTION;
-        $requestData = array("method" => $method, "params" => $params);
-        $this->responseData = $this->dataRequest($requestData);
-        $this->responseData = json_decode($this->responseData, true);
+        $this->params = json_encode(array($ivrId));
+        $this->method = GET_DEFAULT_ACTION_FUNCTION;
+        $this->getResponse(true);
         if ($this->responseData == 0) {
             return null;
         }
@@ -199,11 +182,4 @@ class DataProviderController extends DataRequestController
         return null;
     }
 
-    public function storeCustomerFeedback($stopTime, $timeInIvr, $sessionId, $feedback)
-    {
-        $this->params = json_encode(array($stopTime, $timeInIvr, $sessionId, $feedback));
-        $this->method = SAVE_CUSTOMER_FEEDBACK;
-        $this->getResponse(true);
-        return $this->responseData;
-    }
 }

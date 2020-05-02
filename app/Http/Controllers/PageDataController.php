@@ -28,6 +28,7 @@ class PageDataController extends Controller
     private $pageElementsData;
     private $pageContentData;
     private $defaultPageID;
+    private $ip;
     private $isReloaded;
 
     public function __construct()
@@ -44,20 +45,26 @@ class PageDataController extends Controller
     {
         $this->validatePageDataRequest($request);
         $this->setAttributesFromCache();
-        if (in_array($this->buttonValue, array(PREVIOUS_BUTTON_VALUE, HOME_BUTTON_VALUE))) {
-            //do it later
-        }
-        if (empty($this->buttonId)) {
-            if (!empty($this->previousPageId)) {
-                $this->pageId = $this->previousPageId;
-            }
+        if ($this->isNavigationPage()) {
+            $this->pageId = $this->getPageIdFromNavigationButton();
         } else {
-            $this->pageId = $this->dataProvider->getPageIdFromButton($this->buttonId);
+            if (empty($this->buttonId)) {
+                if (!empty($this->previousPageId)) {
+                    $this->pageId = $this->previousPageId;
+                }
+            } else {
+                $this->pageId = $this->dataProvider->getPageIdFromButton($this->buttonId);
+            }
         }
         if (empty($this->pageId)) {
             $this->pageId = $this->defaultPageID;
         }
         return $this->getPageElements();
+    }
+
+    private function isNavigationPage()
+    {
+        return in_array($this->buttonValue, array(PREVIOUS_BUTTON_VALUE, HOME_BUTTON_VALUE));
     }
 
     private function validatePageDataRequest($request)
@@ -80,6 +87,7 @@ class PageDataController extends Controller
         $this->soundStatus = $request->input('soundStatus');
         $this->language = $request->input('sound');
         $this->cacheKey = $request->input('key');
+        $this->ip = $request->ip();
     }
 
     private function setAttributesFromCache()
@@ -102,28 +110,30 @@ class PageDataController extends Controller
         if ($this->buttonValue == HOME_BUTTON_VALUE) {
             return $this->defaultPageID;
         } elseif ($this->buttonValue == PREVIOUS_BUTTON_VALUE) {
-            //do for previous button
+            return $this->buttonId;
         }
+        return null;
     }
 
     private function getPageElements()
     {
         if (!empty($this->pageId)) {
-            $this->updateVivrJourneyLog();
-            $pageData = $this->dataProvider->getPageData($this->pageId);
-            $pageElements = $this->dataProvider->getPageElements($this->pageId);
-            foreach ($pageElements as $pageElement) {
-                $element = $this->getElementFromFactory($pageElement);
-                if ($element->hasError) {
-                    return $this->getErrorElement();
+            if($this->updateVivrJourneyLog()){
+                $pageData = $this->dataProvider->getPageData($this->pageId);
+                $pageElements = $this->dataProvider->getPageElements($this->pageId);
+                foreach ($pageElements as $pageElement) {
+                    $element = $this->getElementFromFactory($pageElement);
+                    if ($element->hasError) {
+                        return $this->getErrorElement();
+                    }
+                    unset($element->hasError);
+                    array_push($this->pageElementsData, $element);
                 }
-                unset($element->hasError);
-                array_push($this->pageElementsData, $element);
+                $this->setPageDataResponse($pageData);
+                return $this->responseManager->pageDataResponse($this->response, $this->pageContentData);
             }
-            $this->setPageDataResponse($pageData);
-            return $this->responseManager->pageDataResponse($this->response, $this->pageContentData);
         }
-        return $this->getErrorElement();
+        return $this->responseManager->pageDataResponse($this->response, $this->getErrorElement());
     }
 
     private function getElementFromFactory($pageElement)
@@ -142,7 +152,23 @@ class PageDataController extends Controller
     {
         $this->stopTime = date("Y-m-d H:i:s");
         $this->timeInIvr = time() - $this->startTime;
-        //complete this later
+        $logParams = array();
+        $logParams['logTime'] = $this->stopTime;
+        $logParams['fromPage'] = $this->pageId;
+        $logParams['toPage'] = $this->previousPageId;
+        $logParams['sessionId'] = $this->sessionId;
+        $logParams['ivrId'] = $this->ivrId;
+        $logParams['dtmf'] = $this->buttonValue;
+        $logParams['timeInIvr'] = $this->timeInIvr;
+        $logParams['statusFlag'] = '';
+        $logParams['ip'] = $this->ip;
+        $isVivrLogUpdated = $this->dataLogger->updateVivrLog($this->stopTime, $this->timeInIvr, $this->sessionId);
+        $isLoggedCustomerJourney = $this->dataLogger->logCustomerJourney($logParams);
+        if ($isVivrLogUpdated && $isLoggedCustomerJourney) {
+            return true;
+        }
+
+        return false;
     }
 
     private function setPageDataResponse($pageData)
@@ -217,7 +243,7 @@ class PageDataController extends Controller
         if (is_array($navigationPageElement)) {
             $navigationPageElement = $this->getElementFromFactory($navigationPageElement);
         }
-        unset($navigationPageElement->elementId);
+        $navigationPageElement->elementId = $pageData['parent_page_id'];
         unset($navigationPageElement->elementOrder);
         unset($navigationPageElement->hasError);
         return $navigationPageElement;

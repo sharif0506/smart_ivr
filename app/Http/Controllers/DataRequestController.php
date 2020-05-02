@@ -5,8 +5,17 @@ namespace App\Http\Controllers;
 class DataRequestController
 {
     protected $responseData;
+    protected $params;
+    protected $method;
 
-    public function dataRequest($postData = [])
+    protected function getResponse($isArray = false)
+    {
+        $requestData = array("method" => $this->method, "params" => $this->params);
+        $this->responseData = $this->dataRequest($requestData);
+        $this->responseData = json_decode($this->responseData, $isArray);
+    }
+
+    private function dataRequest($postData = [])
     {
         $url = DATA_PROVIDER_URL;
         $postRequest = true;
