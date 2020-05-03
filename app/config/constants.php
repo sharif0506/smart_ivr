@@ -222,7 +222,7 @@ function read_amount($balance, $param)
 
 function read_value($value = '', $param = '')
 {
-
+    error_reporting(0);
     $value = explode(' ', trim($value));
     $multi_prompts = '';
     foreach ($value as $var) {

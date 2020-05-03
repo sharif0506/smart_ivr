@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 class ParagraphElementController extends ElementController
 {
+    public $dynamicAudioFiles;
+
     public function __construct($elementData, $cli, $language)
     {
         parent::__construct($elementData, $cli, $language);
@@ -28,6 +30,9 @@ class ParagraphElementController extends ElementController
                 return;
             }
         }
+        if (!is_array($this->dynamicAudioFiles)) {
+            unset($this->dynamicAudioFiles);
+        }
     }
 
     private function replaceDynamicData()
@@ -36,7 +41,7 @@ class ParagraphElementController extends ElementController
         $this->displayTextEn = str_replace(DYNAMIC_TEXT, $this->calculationResult, $this->displayTextEn);
         $this->displayTextBn = str_replace(DYNAMIC_TEXT, $this->calculationResult, $this->displayTextBn);
         $this->displayTextBn = $this->replaceBengaliDigits($this->displayTextBn);
-
+        $this->getDynamicAudio();
     }
 
     private function getDynamicValue()
@@ -71,6 +76,12 @@ class ParagraphElementController extends ElementController
                 $this->calculationResult = eval("return ($calculation);");
             }
         }
+    }
+
+    private function getDynamicAudio()
+    {
+        $this->dynamicAudioFiles = read_value($this->calculationResult, '$');
+        $this->dynamicAudioFiles = explode(",", $this->dynamicAudioFiles);
     }
 
 }

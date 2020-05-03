@@ -29,6 +29,7 @@ class PageDataController extends Controller
     private $pageContentData;
     private $defaultPageID;
     private $ip;
+    private $dynamicAudio;
     private $isReloaded;
 
     public function __construct()
@@ -39,6 +40,7 @@ class PageDataController extends Controller
         $this->response = response();
         $this->cache = new CacheController();
         $this->pageElementsData = array();
+        $this->dynamicAudio = array();
     }
 
     public function getPageData(Request $request)
@@ -126,6 +128,9 @@ class PageDataController extends Controller
                     if ($element->hasError) {
                         return $this->getErrorElement();
                     }
+                    if (!empty($element->dynamicAudioFiles)) {
+                        $this->dynamicAudio = array_merge($this->dynamicAudio, $element->dynamicAudioFiles);
+                    }
                     unset($element->hasError);
                     array_push($this->pageElementsData, $element);
                 }
@@ -176,7 +181,7 @@ class PageDataController extends Controller
         $pageData = $pageData[$this->pageId];
         $pageDataResponse = new \stdClass();
         $pageDataResponse->currentPage = $this->pageId;
-        $pageDataResponse->action = null;
+        $pageDataResponse->action = $pageData['task'];
         $pageDataResponse->audioFiles = $this->getAudioFiles($pageData);
         $pageDataResponse->language = $this->language;
         $pageDataResponse->pageHeading = $this->getPageHeading($pageData);
@@ -205,8 +210,8 @@ class PageDataController extends Controller
             $audioFiles[BENGALI][] = $greetingsAudio[BENGALI];
         }
         $audioFromDb = null;
-        $audioFromDb[ENGLISH] = explode(",", $pageData['audio_file_en']);
-        $audioFromDb[BENGALI] = explode(",", $pageData['audio_file_ban']);
+        $audioFromDb[ENGLISH] = $this->getDynamicAudioFiles($pageData['audio_file_en'], ENGLISH);
+        $audioFromDb[BENGALI] = $this->getDynamicAudioFiles($pageData['audio_file_ban'], BENGALI);
 
         foreach ($audioFromDb[ENGLISH] as $audioEn) {
             $audioFiles[ENGLISH][] = AUDIO_FILE_PATH . $audioEn;
@@ -215,6 +220,21 @@ class PageDataController extends Controller
             $audioFiles[BENGALI][] = AUDIO_FILE_PATH . $audioBn;
         }
         return $audioFiles;
+    }
+
+    private function getDynamicAudioFiles($audioFiles, $language, $audioType = 'wav')
+    {
+        $audioFromDb[$language] = explode(",", $audioFiles);
+        if (!empty($this->dynamicAudio)) {
+            $tempAudio = array_shift($audioFromDb[$language]);
+            $dynamicList = null;
+            foreach ($this->dynamicAudio as $audio) {
+                $dynamicList [] = $language . "/" . $audio . "." . $audioType;
+            }
+            array_unshift($dynamicList, $tempAudio);
+            $audioFromDb[$language] = array_merge($dynamicList, $audioFromDb[$language]);
+        }
+        return $audioFromDb[$language];
     }
 
     private function getGreetingsAudio()
